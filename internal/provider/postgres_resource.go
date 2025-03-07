@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -12,8 +13,9 @@ import (
 )
 
 type postgresResourceModel struct {
-	ID     types.String `tfsdk:"id"`
-	Status types.String `tfsdk:"status"`
+	ID      types.String `tfsdk:"id"`
+	Version types.String `tfsdk:"version"`
+	Status  types.String `tfsdk:"status"`
 }
 type postgresResource struct {
 	cmd clients.CmdClient
@@ -36,6 +38,9 @@ func (r *postgresResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"status": schema.StringAttribute{
 				Computed: true,
 			},
+			"version": schema.StringAttribute{
+				Required: true,
+			},
 		},
 	}
 }
@@ -49,7 +54,7 @@ func (p *postgresResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	//todo fix version param
-	_, err := p.cmd.Command(ctx, "brew", []string{"install", "postgresql@17"})
+	_, err := p.cmd.Command(ctx, "brew", []string{"install", fmt.Sprintf("postgresql@%s", plan.Version.ValueString())})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running brew install",
@@ -58,7 +63,7 @@ func (p *postgresResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	serviceResp, err := p.cmd.Command(ctx, "brew", []string{"services", "start", "postgresql@17"})
+	serviceResp, err := p.cmd.Command(ctx, "brew", []string{"services", "start", fmt.Sprintf("postgresql@%s", plan.Version.ValueString())})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running brew install",
@@ -95,7 +100,7 @@ func (r *postgresResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, err := r.cmd.Command(ctx, "brew", []string{"services", "stop", "postgresql@17"})
+	_, err := r.cmd.Command(ctx, "brew", []string{"services", "stop", "postgresql@" + plan.Version.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to stop postgresql service via homebrew",
@@ -103,7 +108,7 @@ func (r *postgresResource) Update(ctx context.Context, req resource.UpdateReques
 		)
 	}
 
-	_, err = r.cmd.Command(ctx, "brew", []string{"reinstall", "postgresql@17"})
+	_, err = r.cmd.Command(ctx, "brew", []string{"reinstall", "postgresql@" + plan.Version.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to stop postgresql service via homebrew",
@@ -111,7 +116,7 @@ func (r *postgresResource) Update(ctx context.Context, req resource.UpdateReques
 		)
 	}
 
-	_, err = r.cmd.Command(ctx, "brew", []string{"services", "start", "postgresql@17"})
+	_, err = r.cmd.Command(ctx, "brew", []string{"services", "start", "postgresql@" + plan.Version.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to stop postgresql service via homebrew",
@@ -127,7 +132,7 @@ func (r *postgresResource) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, err := r.cmd.Command(ctx, "brew", []string{"services", "stop", "postgresql@17"})
+	_, err := r.cmd.Command(ctx, "brew", []string{"services", "stop", "postgresql@" + state.Version.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to stop postgresql service via homebrew",
@@ -135,7 +140,7 @@ func (r *postgresResource) Delete(ctx context.Context, req resource.DeleteReques
 		)
 	}
 
-	_, err = r.cmd.Command(ctx, "brew", []string{"uninstall", "postgresql@17"})
+	_, err = r.cmd.Command(ctx, "brew", []string{"uninstall", "postgresql@" + state.Version.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to stop postgresql service via homebrew",

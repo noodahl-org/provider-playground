@@ -19,8 +19,7 @@ var (
 )
 
 type playgroundProviderModel struct {
-	OS     types.String `tfsdk:"os"`
-	PgData types.String `tfsdk:"pg_data"`
+	OS types.String `tfsdk:"os"`
 }
 
 type playgroundProvider struct {
@@ -49,9 +48,6 @@ func (p *playgroundProvider) Schema(_ context.Context, req provider.SchemaReques
 			"os": schema.StringAttribute{
 				Required: true,
 			},
-			"pg_data": schema.StringAttribute{
-				Optional: true,
-			},
 		},
 	}
 }
@@ -71,26 +67,16 @@ func (p *playgroundProvider) Configure(ctx context.Context, req provider.Configu
 			"The provider cannot setup on this system",
 		)
 	}
-	if config.PgData.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("pg_data"),
-			"Unknown PGDATA",
-			"The provider cannot identify where postgres is meant to be configured",
-		)
-	}
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	//todo replace
 	opsys := os.Getenv("OS")
-	pgData := os.Getenv("PGDATA")
 
 	if !config.OS.IsNull() {
 		opsys = config.OS.ValueString()
-	}
-	if !config.PgData.IsNull() {
-		pgData = config.PgData.ValueString()
 	}
 
 	if opsys == "" {
@@ -100,13 +86,7 @@ func (p *playgroundProvider) Configure(ctx context.Context, req provider.Configu
 			"The provider cannot determine which operating system to deploy on",
 		)
 	}
-	if pgData == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("pg_data"),
-			"Missing PGDATA variable",
-			"The provider cannot determine where postgres should stay",
-		)
-	}
+
 	client := clients.NewCmdClient()
 	resp.DataSourceData = client
 	resp.ResourceData = client

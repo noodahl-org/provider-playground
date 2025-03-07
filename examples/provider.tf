@@ -8,10 +8,11 @@ terraform {
 
 provider "provider-playground" {
   os = "darwin"
-  pg_data = "/opt/homebrew/var/postgresql@17"
+  
 }
 
 resource "provider-playground_postgres" "postgres"{
+  version = "17"
 }
 
 data "provider-playground_postgres" "postgres" {}
