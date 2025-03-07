@@ -7,12 +7,12 @@ trimmed scaffolding for custom terraform providers
 ### prerequisites
 
 This guide assumes the user has the following dependencies installed: 
+
 - [golang](https://go.dev/doc/install)
   - A golang environment variable of `$GOBIN` set 
 - [terraoform-cli](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
-- 
 
-### mac os
+### mac os (only supported)
 
 Since we're not uploading this project to the terraform registry have to have dev override specified. 
 In your root (~/) directory, create a `.terraformrc ` file with the following contents
@@ -60,17 +60,70 @@ Export the environment variable before attempting to run a `terraform plan`
 
 Navigate to the `examples` folder and run `terraform plan`. If everything is configured correctly you should see:
 ```
-│ Warning: Provider development overrides are in effect
-│ 
-│ The following provider development overrides are set in the CLI configuration:
-│  - hashicorp/provider-playground in /Users/tachi/.terraform.d/plugins/registry.terraform.io/hashicorp/provider-playground/dev/darwin_arm64
-│ 
-│ The behavior may therefore not match any released version of the provider and applying changes may cause
-│ the state to become incompatible with published releases.
-╵
+...
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
 
-No changes. Your infrastructure matches the configuration.
+Terraform will perform the following actions:
 
-Terraform has compared your real infrastructure against your configuration and found no differences, so no
-changes are needed.
+  # provider-playground_postgres.postgres will be created
+  + resource "provider-playground_postgres" "postgres" {
+      + id     = (known after apply)
+      + status = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
+
+### output 
+
+```
+terraform apply
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # provider-playground_postgres.postgres will be created
+  + resource "provider-playground_postgres" "postgres" {
+      + id     = (known after apply)
+      + status = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + postgres_status = ""
+
+...
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+Outputs:
+
+postgres_status = <<EOT
+started
+```
+
+terraform destroy
+```
+Terraform will perform the following actions:
+
+  # provider-playground_postgres.postgres will be destroyed
+  - resource "provider-playground_postgres" "postgres" {
+      - id     = "/REq+9laxsaO2Ar3tTTPzpo0G1iUel4EvEh7vKPeM+k=" -> null
+      - status = <<-EOT
+            started
+        EOT -> null
+    }
+
+Plan: 0 to add, 0 to change, 1 to destroy.
+
+Changes to Outputs:
+  - postgres_status = <<-EOT
+        started
+    EOT -> null
+...
+Destroy complete! Resources: 1 destroyed.
 ```

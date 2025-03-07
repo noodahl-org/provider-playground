@@ -7,6 +7,15 @@ terraform {
 }
 
 provider "provider-playground" {
-    os = "darwin"
+  os = "darwin"
+  pg_data = "/opt/homebrew/var/postgresql@17"
 }
 
+resource "provider-playground_postgres" "postgres"{
+}
+
+data "provider-playground_postgres" "postgres" {}
+
+output "postgres_status" {
+  value = data.provider-playground_postgres.postgres.status
+}

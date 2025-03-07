@@ -2,7 +2,10 @@ module github.com/noodahl-org/provider-playground
 
 go 1.24.1
 
-require github.com/hashicorp/terraform-plugin-framework v1.14.1
+require (
+	github.com/google/uuid v1.6.0
+	github.com/hashicorp/terraform-plugin-framework v1.14.1
+)
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

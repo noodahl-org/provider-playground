@@ -2,12 +2,15 @@ package provider
 
 import (
 	"context"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/noodahl-org/provider-playground/internal/clients"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -16,7 +19,8 @@ var (
 )
 
 type playgroundProviderModel struct {
-	Region types.String `tfsdk:"region"`
+	OS     types.String `tfsdk:"os"`
+	PgData types.String `tfsdk:"pg_data"`
 }
 
 type playgroundProvider struct {
@@ -42,18 +46,11 @@ func (p *playgroundProvider) Metadata(_ context.Context, _ provider.MetadataRequ
 func (p *playgroundProvider) Schema(_ context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"region": schema.StringAttribute{
-				Optional: true,
-			},
 			"os": schema.StringAttribute{
 				Required: true,
 			},
-			"aws_access_key": schema.StringAttribute{
+			"pg_data": schema.StringAttribute{
 				Optional: true,
-			},
-			"secret_key": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
 			},
 		},
 	}
@@ -66,14 +63,63 @@ func (p *playgroundProvider) Configure(ctx context.Context, req provider.Configu
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	
 
+	if config.OS.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("os"),
+			"Unknown OS",
+			"The provider cannot setup on this system",
+		)
+	}
+	if config.PgData.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("pg_data"),
+			"Unknown PGDATA",
+			"The provider cannot identify where postgres is meant to be configured",
+		)
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	opsys := os.Getenv("OS")
+	pgData := os.Getenv("PGDATA")
+
+	if !config.OS.IsNull() {
+		opsys = config.OS.ValueString()
+	}
+	if !config.PgData.IsNull() {
+		pgData = config.PgData.ValueString()
+	}
+
+	if opsys == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("os"),
+			"Missing OS",
+			"The provider cannot determine which operating system to deploy on",
+		)
+	}
+	if pgData == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("pg_data"),
+			"Missing PGDATA variable",
+			"The provider cannot determine where postgres should stay",
+		)
+	}
+	client := clients.NewCmdClient()
+	resp.DataSourceData = client
+	resp.ResourceData = client
 }
 
 func (p *playgroundProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{
+		NewPostgresDataSource,
+	}
 }
 
 func (p *playgroundProvider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		NewPostgresResource,
+	}
 }
